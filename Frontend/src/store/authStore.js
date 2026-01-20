@@ -1,10 +1,10 @@
 import { create } from 'zustand';
 import axios from 'axios';
 
-// Set this to your live backend URL once you deploy it (e.g., on Render or Railway)
+// Automatically switches between local and production Vercel URL
 const API_URL = import.meta.env.MODE === 'development' 
   ? 'http://localhost:5000/api/auth' 
-  : 'https://your-backend-name.onrender.com/api/auth'; 
+  : '/api/auth'; 
 
 export const useAuthStore = create((set) => ({
     user: (() => {
@@ -19,7 +19,6 @@ export const useAuthStore = create((set) => ({
     login: async (username, password) => {
         set({ isLoading: true, error: null });
         try {
-            // Using the dynamic API_URL
             const res = await axios.post(`${API_URL}/login`, { username, password });
             if (res.data.success) {
                 localStorage.setItem('user', JSON.stringify(res.data.user));
