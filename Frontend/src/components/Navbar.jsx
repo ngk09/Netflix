@@ -1,6 +1,10 @@
 import React from 'react'
+import { useAuthStore } from '../store/authStore'
 
 const Navbar = () => {
+  // 1. Get user and logout from the store
+  const { user, logout } = useAuthStore();
+
   return (
     <nav className='fixed top-0 w-full z-50 bg-gradient-to-b from-black/80 to-transparent bg-black text-gray-200 flex justify-between items-center px-4 md:px-12 h-20 text-sm md:text-[15px] font-medium'>
       
@@ -37,10 +41,25 @@ const Navbar = () => {
         <button className='hidden sm:block bg-red-600 text-white px-3 py-1 rounded text-xs font-bold hover:bg-red-700 transition'>
           Get AI Movie Picks
         </button>
-        
-        <button className='cursor-pointer hover:text-red-600 transition text-xs md:text-sm'>
-          Sign In
-        </button>
+
+        {/* 2. Dynamic User Section: Shows Sign Out if logged in, otherwise Sign In */}
+        {user ? (
+          <div className='flex items-center space-x-4'>
+            <span className='hidden md:block text-zinc-400'>
+              Hi, <span className='text-white font-bold'>{user.username}</span>
+            </span>
+            <button 
+              onClick={logout}
+              className='cursor-pointer bg-zinc-800 border border-zinc-600 hover:bg-red-600 hover:border-red-600 text-white px-3 py-1 rounded transition text-xs md:text-sm font-bold'
+            >
+              Sign Out
+            </button>
+          </div>
+        ) : (
+          <button className='cursor-pointer hover:text-red-600 transition text-xs md:text-sm'>
+            Sign In
+          </button>
+        )}
       </div>
     </nav>
   )
