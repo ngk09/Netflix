@@ -4,7 +4,6 @@ import { useAuthStore } from "../store/authStore";
 
 const SignUp = () => {
   const navigate = useNavigate();
-  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const { signup, isLoading, error } = useAuthStore();
@@ -12,9 +11,9 @@ const SignUp = () => {
   const handleSignUp = async (e) => {
     e.preventDefault();
     try {
-      // Sends plain-text data to MongoDB via Backend
-      await signup(username, email, password); 
-      navigate("/signin");
+      // Firebase will create the user and encrypt the password automatically
+      await signup(email, password); 
+      navigate("/"); // Redirect to home on success
     } catch (err) {
       console.error("Signup failed:", err);
     }
@@ -30,14 +29,6 @@ const SignUp = () => {
       <div className="max-w-[450px] w-full bg-black/80 rounded-lg px-12 py-16 shadow-2xl border border-white/10">
         <h1 className="text-white text-3xl font-bold mb-8">Sign Up</h1>
         <form onSubmit={handleSignUp} className="space-y-4">
-          <input 
-            type="text" 
-            placeholder="Username" 
-            className="w-full h-12 bg-zinc-800 text-white px-5 rounded focus:outline-none focus:ring-2 focus:ring-red-600 transition-all"
-            value={username} 
-            onChange={(e) => setUsername(e.target.value)} 
-            required
-          />
           <input 
             type="email" 
             placeholder="Email Address" 

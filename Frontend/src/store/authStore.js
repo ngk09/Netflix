@@ -1,50 +1,63 @@
 import { create } from 'zustand';
-import axios from 'axios';
-
-// Automatically switches between local and production Vercel URL
-const API_URL = import.meta.env.MODE === 'development' 
-  ? 'http://localhost:5000/api/auth' 
-  : '/api/auth'; 
+import { auth } from '../firebase'; // Ensure this path correctly points to your firebase.js
+import { 
+  onAuthStateChanged, 
+  createUserWithEmailAndPassword, 
+  signInWithEmailAndPassword, 
+  signOut 
+} from "firebase/auth";
 
 export const useAuthStore = create((set) => ({
-    user: (() => {
-        try {
-            const stored = localStorage.getItem("user");
-            return stored ? JSON.parse(stored) : null;
-        } catch { return null; }
-    })(),
-    isLoading: false,
-    error: null,
+  user: null,
+  isLoading: true,
+  error: null,
 
-    login: async (username, password) => {
-        set({ isLoading: true, error: null });
-        try {
-            const res = await axios.post(`${API_URL}/login`, { username, password });
-            if (res.data.success) {
-                localStorage.setItem('user', JSON.stringify(res.data.user));
-                set({ user: res.data.user, isLoading: false });
-                return res.data;
-            }
-        } catch (err) {
-            set({ error: err.response?.data?.message || "Login failed", isLoading: false });
-            throw err;
-        }
-    },
+  // PERSISTENCE: This checks if a user is already logged in when the app starts
+  checkAuth: () => {
+    set({ isLoading: true });
+    // This returns an unsubscribe function to prevent memory leaks
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        set({ user: user, isLoading: false, error: null });
+      } else {
+        set({ user: null, isLoading: false });
+      }
+    });
+    return unsubscribe;
+  },
 
-    signup: async (username, email, password) => {
-        set({ isLoading: true, error: null });
-        try {
-            const res = await axios.post(`${API_URL}/signup`, { username, email, password });
-            set({ isLoading: false });
-            return res.data;
-        } catch (err) {
-            set({ error: err.response?.data?.message || "Signup failed", isLoading: false });
-            throw err;
-        }
-    },
-
-    logout: () => {
-        localStorage.removeItem("user");
-        set({ user: null });
+  signup: async (email, password) => {
+    set({ isLoading: true, error: null });
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      set({ user: userCredential.user, isLoading: false });
+    } catch (err) {
+      // Friendly error handling
+      const errorMessage = err.code === 'auth/email-already-in-use' 
+        ? "Email already exists." 
+        : err.message;
+      set({ error: errorMessage, isLoading: false });
+      throw err;
     }
+  },
+
+  login: async (email, password) => {
+    set({ isLoading: true, error: null });
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      set({ user: userCredential.user, isLoading: false });
+    } catch (err) {
+      set({ error: "Invalid email or password", isLoading: false });
+      throw err;
+    }
+  },
+
+  logout: async () => {
+    try {
+      await signOut(auth);
+      set({ user: null, error: null });
+    } catch (err) {
+      console.error("Logout Error:", err);
+    }
+  }
 }));

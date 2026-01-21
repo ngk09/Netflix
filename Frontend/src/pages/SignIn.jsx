@@ -4,17 +4,18 @@ import { useAuthStore } from "../store/authStore";
 
 const SignIn = () => {
   const navigate = useNavigate();
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState(""); // Changed from username to email
   const [password, setPassword] = useState("");
   const { login, isLoading, error } = useAuthStore();
 
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
-      // Calls backend, verifies plain-text password, and saves user to state
-      await login(username, password); 
+      // Firebase auth uses email and password
+      await login(email, password); 
       navigate("/");
     } catch (err) {
+      // Errors are now handled by the Firebase SDK and store
       console.error("Login failed:", err);
     }
   };
@@ -30,11 +31,11 @@ const SignIn = () => {
         <h1 className="text-white text-3xl font-bold mb-8">Sign In</h1>
         <form onSubmit={handleLogin} className="space-y-4">
           <input 
-            type="text" 
-            placeholder="Username" 
+            type="email" 
+            placeholder="Email" 
             className="w-full h-12 bg-zinc-800 text-white px-5 rounded focus:outline-none focus:ring-2 focus:ring-red-600 transition-all"
-            value={username} 
-            onChange={(e) => setUsername(e.target.value)} 
+            value={email} 
+            onChange={(e) => setEmail(e.target.value)} 
             required
           />
           <input 

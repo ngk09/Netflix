@@ -51,8 +51,8 @@ const Footer = () => {
             <p className="text-zinc-600 text-xs font-bold tracking-widest uppercase mb-2">Netflix India Clone</p>
             <p className="text-sm">Developed with <span className="text-red-600">❤</span> by Nandan G.K.</p>
             <p className="mt-4 text-xs max-w-2xl leading-loose opacity-60">
-              Explore Netflix TV shows and movies and discover bonus cinematic content on 
-              <span className="text-white hover:underline cursor-pointer font-bold ml-1">Tudum.com</span>.
+              Explore Netflix TV shows and movies and discover bonus cinematic content
+              <span className="text-white hover:underline cursor-pointer font-bold ml-1"></span>.
             </p>
           </div>
         </div>
