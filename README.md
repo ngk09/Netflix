@@ -3,7 +3,7 @@
 A fully responsive Netflix replica built with **React**, **Tailwind CSS**, and **Firebase**. This project features a high-performance cinematic UI, user authentication, and a dynamic movie catalog.
 
 <p align="center">
-  <img src="./assets/screenshot.png" alt="Netflix Clone Preview" width="100%" style="border-radius: 10px;">
+  <img src="./assets/Screenshot 2026-01-21 120701.png" alt="Netflix Clone Preview" width="100%" style="border-radius: 10px;">
 </p>
 
 ---
