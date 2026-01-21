@@ -1,4 +1,14 @@
+# Dependency folders
 node_modules/
-.env
+
+# Build output
 dist/
-.DS_Store
+
+# Firebase system files
+.firebase/
+
+# Hide the Firebase config file entirely
+src/firebase.js
+
+# Environment variables
+.envgit rm --cached src/firebase.js
