@@ -1,12 +1,14 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
 const app = express();
 app.use(express.json());
 
-// Optimized CORS for production
+// Optimized CORS for Vercel
 app.use(cors({
   origin: '*', 
   methods: ["GET", "POST", "PUT", "DELETE"],
@@ -16,79 +18,91 @@ app.use(cors({
 /** * Optimized MongoDB Connection for Vercel Serverless
  * Reuses the connection to avoid "Connection Storming" 
  */
-let cachedConnection = null;
-
+let isConnected = false;
 const connectDB = async () => {
-  if (cachedConnection) {
-    console.log("Using cached MongoDB connection");
-    return cachedConnection;
-  }
-
-  // Handle initial connection errors
+  if (isConnected) return;
   try {
     const db = await mongoose.connect(process.env.MONGO_URI, {
-      bufferCommands: false, // Recommended for serverless to fail fast
+      bufferCommands: false,
     });
-    cachedConnection = db;
+    isConnected = db.connections[0].readyState;
     console.log("✅ New MongoDB Connection Established");
-    return db;
   } catch (err) {
     console.error("❌ DB Connection Error:", err);
     throw err;
   }
 };
 
-// Middleware to ensure DB is connected before every request
+// Middleware to ensure DB connection before processing requests
 app.use(async (req, res, next) => {
-  try {
-    await connectDB();
-    next();
-  } catch (error) {
-    res.status(500).json({ success: false, message: "Database connection failed" });
-  }
+  await connectDB();
+  next();
 });
 
-// User Model
+// User Model (Must match your app's requirements)
 const User = mongoose.model('User', new mongoose.Schema({
   username: { type: String, required: true, unique: true },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true }
 }));
 
-// SIGNUP ROUTE
+// --- SECURE AUTH ROUTES ---
+
+// SIGNUP ROUTE (With Bcrypt Hashing)
 app.post('/api/auth/signup', async (req, res) => {
   try {
     const { username, email, password } = req.body;
-    const newUser = new User({ username, email, password });
+    
+    // Check if user exists
+    const existingUser = await User.findOne({ $or: [{ email }, { username }] });
+    if (existingUser) return res.status(400).json({ success: false, message: "User already exists" });
+
+    // Hash the password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    const newUser = new User({ username, email, password: hashedPassword });
     await newUser.save();
-    res.status(201).json({ success: true, message: "User Created" });
+    
+    res.status(201).json({ success: true, message: "User Created Successfully" });
   } catch (err) {
-    res.status(400).json({ success: false, message: "User already exists or invalid data" });
+    res.status(500).json({ success: false, message: "Server error during signup" });
   }
 });
 
-// LOGIN ROUTE
+// LOGIN ROUTE (With Bcrypt Comparison)
 app.post('/api/auth/login', async (req, res) => {
-  const { username, password } = req.body;
+  const { username, password } = req.body; // username can be email or username
   try {
     const user = await User.findOne({ 
       $or: [{ username: username }, { email: username }] 
     });
 
-    if (user && user.password === password) {
-      return res.json({ 
-        success: true, 
-        user: { username: user.username, email: user.email } 
-      });
-    }
-    res.status(401).json({ success: false, message: "Invalid credentials" });
+    if (!user) return res.status(401).json({ success: false, message: "Invalid credentials" });
+
+    // Compare hashed password
+    const validPassword = await bcrypt.compare(password, user.password);
+    if (!validPassword) return res.status(401).json({ success: false, message: "Invalid credentials" });
+
+    // Generate JWT Token
+    const accessToken = jwt.sign(
+      { id: user._id }, 
+      process.env.SECRET_KEY || 'your_secret_key', 
+      { expiresIn: "5d" }
+    );
+    
+    res.json({ 
+      success: true, 
+      user: { username: user.username, email: user.email },
+      accessToken 
+    });
   } catch (error) {
-    res.status(500).json({ success: false, message: "Server error" });
+    res.status(500).json({ success: false, message: "Server error during login" });
   }
 });
 
 /** * VERCEL EXPORT
- * Exporting the app allows Vercel to handle it as a Serverless Function.
+ * Exporting allows Vercel to treat this as a single Vercel Function.
  */
 if (process.env.NODE_ENV !== 'production') {
   const PORT = process.env.PORT || 5000;
